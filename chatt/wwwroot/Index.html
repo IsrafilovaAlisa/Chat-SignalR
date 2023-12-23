@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<html class="h-100">
+<head>
+    <meta charset="utf-8" />
+    <title>alisa com</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/chatt.styles.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column h-100" style="position: relative;">
+    <style>
+        .width_name_sms {
+            width: 10%;
+        }
+
+        .for_footer {
+            background-color: dimgray;
+            width: auto
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-right: 0.2rem;
+        }
+
+        #modal1 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+
+        .message-date-span {
+            font-size: .9rem;
+            bottom: .2rem;
+            right: .3rem;
+            position: absolute;
+        }
+    </style>
+    <!--<div>
+        Введите логин:<br />
+        <input id="userName" type="text" /><br /><br />
+        Введите сообщение:<br />
+        <input type="text" id="message" /><br /><br />
+        <input type="button" id="sendBtn" value="Отправить" disabled="disabled" />
+    </div>-->
+    <!--<div id="chatroom"></div>-->
+    <input type="hidden" id="hiddenUserId"/>
+    <div>
+
+    </div>
+    <a class ="btn btn-primary w-100" data-bs-toggle="modal" href="#exampleModalToggle" role="button"><span id="titleUserName">Ввод имени</span></a>
+
+        <div class="container-fluid h-100" style="overflow:auto;margin-bottom:73px;" id="messages-content"></div>
+
+        <div class="modal fade" data-backdrop="static" data-keyboard="false" id="exampleModalToggle" aria-hidden="true" aria-labelledby="exampleModalToggleLabel" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalToggleLabel">Введите ваше имя для продолжения беседы</h5>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" class="form-control" id="userName" placeholder="Ваше имя">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="connectToChat()">Сохранить и продолжить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Подключение JavaScript-библиотеки Bootstrap -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <!-- Скрипт для открытия модального окна при загрузке страницы -->
+        <footer class="footer footer-style mt-auto py-3" style="border-top: 3px solid #F2A104; position: absolute; z-index: 999; left:0px; bottom:0px; right:0px; ">
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+
+                    </div>
+                    <div class="col">
+                        <input type="text" class="form-control" id="message" placeholder="Ваше сообщение">
+                    </div>
+                    <div class="col">
+                        <button type="button" id="sendBtn" disabled="disabled" class="btn btn-primary">Отправить</button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+
+        <script>
+
+            const hubConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatt")
+                .build();
+
+            document.getElementById("sendBtn").addEventListener("click", function () {
+                const message = document.getElementById("message").value;
+
+                hubConnection.invoke("Send", message) // отправка данных серверу
+                    .catch(function (err) {
+                        return console.error(err.toString());
+                    });
+                document.getElementById("message").value = "";
+
+
+            });
+
+
+            // получение данных с сервера
+            hubConnection.on("Receive", function (messageOBJ) {
+                addMessageToView(messageOBJ);
+            });
+
+            hubConnection.on("MessageDeleted", function (ID) {
+                console.log(ID);
+                $('.message-id').each(function (index) {
+                    if ($(this).val() == ID) {
+                        $(this).parent().remove();
+                    }
+                })
+            });
+
+            function scrollToBottom() {
+                const containerChat = document.getElementById('messages-content');
+                const scrollHeight = document.body.scrollHeight;
+                containerChat.scrollTop = containerChat.scrollHeight;
+                window.scrollTo(0, scrollHeight);
+
+            }
+
+            function addMessageToView(messageObj) {
+                'use strict'
+                console.log(messageObj);
+
+                var button_delete = document.createElement("button");
+                button_delete.classList.add("btn");
+                button_delete.classList.add("btn-link");
+                button_delete.addEventListener("click", function () {
+                    hubConnection.invoke("removeMessage", messageObj.id) // отправка данных серверу
+                        .catch(function (err) {
+                            return console.error(err.toString());
+                        });
+                })
+                var button_delete_content = document.createElement("i");
+                button_delete_content.classList.add("deleteEl_click");
+                button_delete_content.classList.add("bi");
+                button_delete_content.classList.add("bi-trash");
+                button_delete.appendChild(button_delete_content);
+
+
+
+                var messageContainer = document.createElement("div");
+                messageContainer.style = 'position:relative; overflow:auto';
+                messageContainer.classList.add('w-100', 'p-3', 'rounded', 'border', 'mb-2');
+
+                var hiddenId = document.createElement('input');
+                hiddenId.type = "hidden";
+                hiddenId.value = messageObj.id;
+                hiddenId.classList.add('message-id');
+
+                var messageElement = document.createElement("span");
+                messageElement.classList.add('col');
+                messageElement.innerText = messageObj.text;
+
+                var nameElement = document.createElement("span");
+                nameElement.classList.add('col');
+                nameElement.classList.add('user-name');
+                nameElement.innerText = messageObj.userName + ':';
+
+
+
+                function getFormatedDate(dateStamp) {
+                    var dt = new Date(dateStamp);
+                    return dt.toLocaleDateString() + " " + ("0" + dt.getHours()).slice(-2) + ":" + ("0" + dt.getMinutes()).slice(-2);
+
+                }
+
+                var dateElement = document.createElement("span");
+                dateElement.classList.add('col');
+                dateElement.classList.add('message-date-span');
+                dateElement.innerText = getFormatedDate(messageObj.dateStamp);
+
+
+
+                messageContainer.appendChild(hiddenId);
+                messageContainer.appendChild(nameElement);
+                messageContainer.appendChild(messageElement);
+                messageContainer.appendChild(dateElement);
+
+                if (document.getElementById("hiddenUserId").innerText == messageObj.userId)
+                    messageContainer.appendChild(button_delete);
+
+
+
+                document.getElementById('messages-content').appendChild(messageContainer);
+                scrollToBottom();
+            }
+
+
+
+
+
+            document.getElementById("message").onkeydown = function (e) {
+                if (e.keyCode == 13) {
+                    document.getElementById("sendBtn").click();
+
+                }
+            };
+
+            async function connectToChat() {
+                if (hubConnection.state == 'Connected') {
+                    var userName = document.getElementById("userName").value;
+                    await hubConnection.invoke("SetUserName", userName);
+
+                    hubConnection.invoke("getHistory").then(response =>
+                        response.forEach(x => {
+                            addMessageToView(x)
+                        }));
+                    $("#exampleModalToggle").modal("hide");
+
+                }
+                else {
+                    hubConnection.start()
+                        .then(async function () {
+
+                            hubConnection.invoke("getUserInfo").then(function (response)
+                            {
+                                document.getElementById("titleUserName").innerText = response.name;
+                                document.getElementById("hiddenUserId").innerText = response.id;
+
+                            })
+
+                            document.getElementById("sendBtn").disabled = false;
+
+                            //var userName = document.getElementById("userName").value;
+                            //await hubConnection.invoke("SetUserName", userName);
+
+                            hubConnection.invoke("getHistory").then(response =>
+                                response.forEach(x => {
+                                    addMessageToView(x)
+                                }));
+
+                            while (document.messageContainer) {
+                                document.removeChild(document.messageContainer)
+                            }
+                            $("#exampleModalToggle").modal("hide");
+
+                        }
+                        )
+                        .catch(function (err) {
+                            return console.error(err.toString());
+                        });
+
+                }
+            }
+
+            connectToChat();
+        </script>
+
+        <script src="/lib/jquery/dist/jquery.min.js"></script>
+        <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/js/site.js" asp-append-version="true"></script>
+</body>
+</html>
