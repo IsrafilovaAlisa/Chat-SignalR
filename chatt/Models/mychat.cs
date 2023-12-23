@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
@@ -74,28 +75,16 @@ namespace chatt.Models
 
             public async Task<List<Groups>> GetChats()
             {
-                //var user = await getUserInfo();
-                //if (user == null) return null!;
-
-                //if (_context.GroupUsers.Where(x => x.GroupId == groupId && x.UserId == user.id).Any())
-                //{
-                //    Groups group = new Groups()
-                //    {
-                //        Id = groupId,
-                //        UserId = userId,
-                //        Name = chatName
-
-                //    };
-                //    return group;
-                //}
-
                 var user = await getUserInfo();
                 if (user != null)
                 {
-                    return _context.Groups.Include(x => x.GroupUsers).OrderBy(x => x.UserId).Select(x => new Groups()
-                    {
-                        Name = x.Name
-                    }).ToList();
+                    var x = from g in _context.Groups
+                            join gu in _context.GroupUsers on g.Id equals gu.GroupId
+                            where gu.UserId == user.id
+                            select g;
+
+
+                    return x.ToList();
                 }
                 return null!;
 
